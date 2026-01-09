@@ -1,0 +1,77 @@
+diff --git a/start b/start
+--- a/start
++++ b/start
+@@ -1,5 +1,10 @@
+ #!/usr/bin/env bash
+
++# Version file for persistent mode tracking
++# See: https://github.com/stellar/quickstart/issues/762
++QUICKSTART_VERSION_FILE="/opt/stellar/.quickstart-version"
++README_PERSISTENT_URL="https://github.com/stellar/quickstart#persistent-mode"
++
+ set -e
+
+ # This script launches the Stellar Quickstart Docker container services.
+@@ -XXX,6 +XXX,50 @@ function copy_pgpass() {
+   fi
+ }
+
++# Check and persist quickstart version for persistent mode
++# Warns users when the container version changes but persistent volume is reused
++function check_quickstart_version() {
++    # Only relevant in persistent mode (when /opt/stellar is mounted)
++    if [ -f "/opt/stellar/.docker-ephemeral" ]; then
++        # Ephemeral mode - no version tracking needed
++        return 0
++    fi
++
++    local current_version="${REVISION:-unknown}"
++
++    if [ -f "$QUICKSTART_VERSION_FILE" ]; then
++        local stored_version
++        stored_version=$(cat "$QUICKSTART_VERSION_FILE" 2>/dev/null)
++
++        if [ "$stored_version" != "$current_version" ]; then
++            echo ""
++            echo "========================================================================"
++            echo "WARNING: Quickstart version mismatch detected!"
++            echo "========================================================================"
++            echo ""
++            echo "  Stored version:  $stored_version"
++            echo "  Current version: $current_version"
++            echo ""
++            echo "You are running a different version of quickstart than was previously"
++            echo "used with this persistent volume. This may cause issues because:"
++            echo ""
++            echo "  - Configuration files in /opt/stellar may be outdated"
++            echo "  - Scripts may reference binaries that no longer exist"
++            echo "  - File formats or directory structures may have changed"
++            echo ""
++            echo "To resolve this, you can:"
++            echo ""
++            echo "  1. Start fresh: Remove the contents of your mounted volume and restart"
++            echo "  2. Pin the version: Use the same quickstart image version as before"
++            echo "  3. Update manually: Review and update configuration files as needed"
++            echo ""
++            echo "For more information about persistent mode limitations, see:"
++            echo "  $README_PERSISTENT_URL"
++            echo ""
++            echo "========================================================================"
++            echo ""
++
++            # Update the stored version after warning
++            echo "$current_version" > "$QUICKSTART_VERSION_FILE"
++        fi
++    else
++        # First run with this persistent volume - store the version
++        echo "$current_version" > "$QUICKSTART_VERSION_FILE"
++    fi
++}
++
+ function start() {
+   # Start services
+   copy_defaults
++  check_quickstart_version
+
+   # ... rest of start function
+ }
