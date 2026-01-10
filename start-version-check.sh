@@ -25,20 +25,23 @@ function check_quickstart_version() {
         return 0
     fi
 
-    local current_version="${REVISION:-unknown}"
+    local current_version="${VERSION:-unknown}"
+    local current_revision="${REVISION:-unknown}"
 
     if [ -f "$QUICKSTART_VERSION_FILE" ]; then
         local persistent_version
-        persistent_version=$(cat "$QUICKSTART_VERSION_FILE" 2>/dev/null)
+        local persistent_revision
+        persistent_version=$(sed -n '1p' "$QUICKSTART_VERSION_FILE" 2>/dev/null)
+        persistent_revision=$(sed -n '2p' "$QUICKSTART_VERSION_FILE" 2>/dev/null)
 
-        if [ "$persistent_version" != "$current_version" ]; then
+        if [ "$persistent_revision" != "$current_revision" ]; then
             echo ""
             echo "========================================================================"
             echo "WARNING: Quickstart version mismatch detected!"
             echo "========================================================================"
             echo ""
-            echo "  Persistent version: $persistent_version"
-            echo "  Current version: $current_version"
+            echo "  Persistent version: ${persistent_version} (${persistent_revision})"
+            echo "  Current version:    ${current_version} (${current_revision})"
             echo ""
             echo "You are running a different version of quickstart than was previously"
             echo "used with this persistent volume. This may cause issues because:"
@@ -50,7 +53,11 @@ function check_quickstart_version() {
             echo "To resolve this, you can:"
             echo ""
             echo "  1. Start fresh: Remove the contents of your mounted volume and restart"
-            echo "  2. Pin the version: Use the same quickstart image version as before"
+            echo ""
+            echo "  2. Pin the version: Use the same quickstart image version as before:"
+            echo ""
+            echo "     docker run -v \"/path/to/volume:/opt/stellar\" stellar/quickstart:${persistent_version}"
+            echo ""
             echo "  3. Update manually: Review and update configuration files as needed"
             echo ""
             echo "For more information about persistent mode limitations, see:"
@@ -60,10 +67,10 @@ function check_quickstart_version() {
             echo ""
 
             # Update the persistent version after warning
-            echo "$current_version" > "$QUICKSTART_VERSION_FILE"
+            printf '%s\n%s\n' "$current_version" "$current_revision" > "$QUICKSTART_VERSION_FILE"
         fi
     else
         # First run with this persistent volume - persist the version
-        echo "$current_version" > "$QUICKSTART_VERSION_FILE"
+        printf '%s\n%s\n' "$current_version" "$current_revision" > "$QUICKSTART_VERSION_FILE"
     fi
 }
