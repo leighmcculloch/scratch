@@ -21,6 +21,11 @@ export PGDATA="$PGHOME/data"
 export PGUSER="stellar"
 export PGPORT=5432
 
+# Version persistence for persistent mode
+# See: https://github.com/stellar/quickstart/issues/762
+QUICKSTART_VERSION_FILE="/opt/stellar/.quickstart-version"
+README_PERSISTENT_URL="https://github.com/stellar/quickstart#persistent-mode"
+
 : "${PROTOCOL_VERSION:=$PROTOCOL_VERSION_DEFAULT}"
 : "${ENABLE:=core,horizon,rpc}"
 : "${ENABLE_LOGS:=false}"
@@ -91,6 +96,7 @@ function start() {
   echo "network root account id: $NETWORK_ROOT_ACCOUNT_ID"
 
   copy_defaults
+  check_quickstart_version
   validate_after_copy_defaults
   init_db
   init_stellar_core
@@ -356,6 +362,65 @@ function copy_pgpass() {
   $CP /opt/stellar/postgresql/.pgpass /var/lib/stellar
   chmod 0600 /var/lib/stellar/.pgpass
   chown stellar:stellar /var/lib/stellar/.pgpass
+}
+
+# Check and persist quickstart version for persistent mode
+# Warns users when the container version changes but persistent volume is reused
+function check_quickstart_version() {
+    # Only relevant in persistent mode (when /opt/stellar is mounted)
+    if [ -f "/opt/stellar/.docker-ephemeral" ]; then
+        # Ephemeral mode - no version tracking needed
+        return 0
+    fi
+
+    local current_version="${VERSION:-unknown}"
+    local current_revision="${REVISION:-unknown}"
+
+    if [ -f "$QUICKSTART_VERSION_FILE" ]; then
+        local persistent_version
+        local persistent_revision
+        persistent_version=$(sed -n '1p' "$QUICKSTART_VERSION_FILE" 2>/dev/null)
+        persistent_revision=$(sed -n '2p' "$QUICKSTART_VERSION_FILE" 2>/dev/null)
+
+        if [ "$persistent_revision" != "$current_revision" ]; then
+            echo ""
+            echo "========================================================================"
+            echo "WARNING: Quickstart version mismatch detected!"
+            echo "========================================================================"
+            echo ""
+            echo "  Persistent version: ${persistent_version} (${persistent_revision})"
+            echo "  Current version:    ${current_version} (${current_revision})"
+            echo ""
+            echo "You are running a different version of quickstart than was previously"
+            echo "used with this persistent volume. This may cause issues because:"
+            echo ""
+            echo "  - Configuration files in /opt/stellar may be outdated"
+            echo "  - Scripts may reference binaries that no longer exist"
+            echo "  - File formats or directory structures may have changed"
+            echo ""
+            echo "To resolve this, you can:"
+            echo ""
+            echo "  1. Start fresh: Remove the contents of your mounted volume and restart"
+            echo ""
+            echo "  2. Pin the version: Use the same quickstart image version as before:"
+            echo ""
+            echo "     docker run -v \"/path/to/volume:/opt/stellar\" stellar/quickstart:${persistent_version}"
+            echo ""
+            echo "  3. Update manually: Review and update configuration files as needed"
+            echo ""
+            echo "For more information about persistent mode limitations, see:"
+            echo "  $README_PERSISTENT_URL"
+            echo ""
+            echo "========================================================================"
+            echo ""
+
+            # Update the persistent version after warning
+            printf '%s\n%s\n' "$current_version" "$current_revision" > "$QUICKSTART_VERSION_FILE"
+        fi
+    else
+        # First run with this persistent volume - persist the version
+        printf '%s\n%s\n' "$current_version" "$current_revision" > "$QUICKSTART_VERSION_FILE"
+    fi
 }
 
 function init_db() {
