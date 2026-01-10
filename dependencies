@@ -1,0 +1,17 @@
+#! /usr/bin/env bash
+set -e
+
+# dependencies
+export DEBIAN_FRONTEND=noninteractive
+apt-get update
+apt-get install -y curl apt-transport-https \
+                   postgresql-client postgresql postgresql-contrib \
+                   sudo supervisor psmisc \
+                   nginx rsync jq netcat \
+                   libunwind8 sqlite libc++abi1-12 libc++1-12
+apt-get clean
+rm -rf /var/lib/apt/lists/*
+
+chown -R www-data:www-data /var/lib/nginx
+
+echo "\nDone installing dependencies...\n"
