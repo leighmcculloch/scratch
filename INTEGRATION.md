@@ -10,7 +10,7 @@ See: https://github.com/stellar/quickstart/issues/762
 
 ## Solution
 
-Store the quickstart version in `/opt/stellar/.quickstart-version` and compare it on startup. If versions differ, display a warning with actionable guidance.
+Persist the quickstart version in `/opt/stellar/.quickstart-version` and compare it on startup. If versions differ, display a warning with actionable guidance.
 
 ## Integration Steps
 
@@ -59,17 +59,17 @@ function main() {
 - No warning displayed
 
 ### Persistent Mode - Same Version
-- Stored version matches current `$REVISION`
+- Persistent version matches current `$REVISION`
 - No warning displayed
 
 ### Persistent Mode - Version Mismatch
-- Stored version differs from current `$REVISION`
+- Persistent version differs from current `$REVISION`
 - Warning displayed with:
   - Both version numbers
   - Explanation of potential issues
   - Resolution options
   - Link to README documentation
-- Stored version is updated to current version
+- Persistent version is updated to current version
 
 ## Example Warning Output
 
@@ -78,7 +78,7 @@ function main() {
 WARNING: Quickstart version mismatch detected!
 ========================================================================
 
-  Stored version:  abc123def
+  Persistent version: abc123def
   Current version: xyz789ghi
 
 You are running a different version of quickstart than was previously
@@ -105,4 +105,4 @@ For more information about persistent mode limitations, see:
 1. **Ephemeral mode**: Ensure no version file is created when `.docker-ephemeral` exists
 2. **First persistent run**: Verify version file is created
 3. **Same version**: Verify no warning on subsequent run with same version
-4. **Version change**: Modify stored version, restart, verify warning appears
+4. **Version change**: Modify persistent version, restart, verify warning appears

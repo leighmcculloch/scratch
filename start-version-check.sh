@@ -11,8 +11,8 @@
 # container expects different binaries or configuration formats.
 #
 # This function:
-# 1. Stores the quickstart version in /opt/stellar/.quickstart-version on first run
-# 2. On subsequent runs, compares the stored version with the current version
+# 1. Persists the quickstart version in /opt/stellar/.quickstart-version on first run
+# 2. On subsequent runs, compares the persistent version with the current version
 # 3. If versions differ, displays a warning with a link to documentation
 
 QUICKSTART_VERSION_FILE="/opt/stellar/.quickstart-version"
@@ -28,16 +28,16 @@ function check_quickstart_version() {
     local current_version="${REVISION:-unknown}"
 
     if [ -f "$QUICKSTART_VERSION_FILE" ]; then
-        local stored_version
-        stored_version=$(cat "$QUICKSTART_VERSION_FILE" 2>/dev/null)
+        local persistent_version
+        persistent_version=$(cat "$QUICKSTART_VERSION_FILE" 2>/dev/null)
 
-        if [ "$stored_version" != "$current_version" ]; then
+        if [ "$persistent_version" != "$current_version" ]; then
             echo ""
             echo "========================================================================"
             echo "WARNING: Quickstart version mismatch detected!"
             echo "========================================================================"
             echo ""
-            echo "  Stored version:  $stored_version"
+            echo "  Persistent version: $persistent_version"
             echo "  Current version: $current_version"
             echo ""
             echo "You are running a different version of quickstart than was previously"
@@ -59,11 +59,11 @@ function check_quickstart_version() {
             echo "========================================================================"
             echo ""
 
-            # Update the stored version after warning
+            # Update the persistent version after warning
             echo "$current_version" > "$QUICKSTART_VERSION_FILE"
         fi
     else
-        # First run with this persistent volume - store the version
+        # First run with this persistent volume - persist the version
         echo "$current_version" > "$QUICKSTART_VERSION_FILE"
     fi
 }
